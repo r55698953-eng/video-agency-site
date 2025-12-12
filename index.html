@@ -1,389 +1,465 @@
-<!DOCTYPE html>
-<html lang="ru" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRISMA | Video Production</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#0f172a', // Темный сине-серый (Dark Slate)
-                        glass: 'rgba(255, 255, 255, 0.05)',
-                        glassHover: 'rgba(255, 255, 255, 0.1)',
-                        accent: '#0ea5e9', // Насыщенный голубой (Sky Blue 600)
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'blob': 'blob 7s infinite',
-                    },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-                        },
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            background-color: #0f172a;
-            color: white;
-            overflow-x: hidden;
-        }
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Play, ArrowRight, Star, Mail, Instagram, Twitter, Menu as MenuIcon } from 'lucide-react';
 
-        /* Эффект жидкого стекла */
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Скрытие скроллбара для каруселей, но сохранение функционала */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+/* --- COMPONENTS --- */
 
-        /* Градиентный текст */
-        .text-gradient {
-            background: linear-gradient(135deg, #ffffff 0%, #0ea5e9 100%); /* Голубой градиент */
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+// 1. Enhanced Live Background (Теперь только 2 доминирующие сферы справа/слева)
+const AmbientBackground = () => {
+  return (
+    <div className="fixed inset-0 z-0 overflow-hidden bg-[#000205]">
+      {/* Deep base glow */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-[#000510] via-[#050b1a] to-[#000510]" />
 
-        /* Стиль кнопки для свечения текста и фона */
-        .cta-button {
-            /* НОВЫЙ БАЗОВЫЙ ЦВЕТ: белый фон, темный текст */
-            background-color: white; 
-            color: #0f172a; /* dark */
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 0 30px -5px rgba(255,255,255,0.2);
-            transform: translateY(0);
-        }
+      {/* Primary Moving Blob 1 - Левая сторона (ПЕРВАЯ ПОЛОСКА) */}
+      <motion.div
+        animate={{
+          scale: [1, 1.6, 0.8, 1],
+          x: [0, 200, -80, 0],
+          y: [0, -150, 90, 0],
+          rotate: [0, 80, -80, 0],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[5%] left-[15%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[150px] mix-blend-screen"
+      />
+      
+      {/* Primary Moving Blob 2 - Правая сторона (ВТОРАЯ ПОЛОСКА) */}
+      <motion.div
+        animate={{
+          scale: [1, 1.3, 0.9, 1],
+          x: [0, -140, 140, 0],
+          y: [0, 140, -140, 0],
+        }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        className="absolute top-[10%] right-[5%] w-[45vw] h-[45vw] bg-indigo-500/20 rounded-full blur-[150px] mix-blend-screen"
+      />
+      
+      {/* ЗДЕСЬ НЕТ ТРЕТЬЕЙ СФЕРЫ. Всего два движущихся источника свечения. */}
 
-        .cta-button:hover {
-            transform: translateY(-4px);
-            /* НОВЫЙ ЦВЕТ НА HOVER: голубой фон (accent) */
-            background-color: #0ea5e9; /* accent */
-            color: white; /* Белый текст для контраста */
-            
-            /* Яркий бирюзовый/голубой для эффекта свечения */
-            box-shadow: 0 0 50px -10px rgba(52, 211, 235, 0.8); 
-        }
-        
-        /* Упрощаем стили для спана текста внутри кнопки: он просто наследует цвет родителя */
-        .cta-button .text-glow {
-            color: inherit; 
-            transition: none; 
-            text-shadow: none;
-        }
-    </style>
-</head>
-<body class="relative min-h-screen">
-
-    <!-- Фоновые "пятна" для атмосферы -->
-    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
-        <div class="absolute top-0 right-1/4 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
-        <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
+      {/* Grain Texture */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 brightness-125 contrast-125 mix-blend-overlay pointer-events-none"></div>
     </div>
+  );
+};
 
-    <!-- Хедер (Верхняя линия) -->
-    <nav class="fixed top-0 w-full z-50 glass-panel border-b-0 border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <!-- Логотип -->
-            <div class="flex items-center gap-3 group cursor-pointer" onclick="window.scrollTo(0,0)">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center group-hover:border-accent/50 transition duration-500">
-                    <svg class="w-6 h-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <!-- Логотип-треугольник -->
-                        <path d="M12 2L2 22h20L12 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M12 8l-4 8h8l-4-8z" class="opacity-50" fill="currentColor" stroke="none"/>
-                    </svg>
-                </div>
-                <span class="text-xl font-bold tracking-widest text-white uppercase group-hover:text-accent transition duration-300" id="agency-name">Prisma</span>
-            </div>
+// 2. Refined Glass UI (Общая стеклянная карточка)
+const GlassCard = ({ children, className = "", hoverEffect = false, noPadding = false }) => (
+  <motion.div
+    whileHover={hoverEffect ? { y: -3, boxShadow: "0 15px 30px rgba(0,0,0,0.2)" } : {}}
+    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+    className={`relative overflow-hidden backdrop-blur-3xl bg-white/[0.03] border border-white/[0.12] shadow-[0_4px_20px_rgba(0,0,0,0.1)] rounded-[24px] ${noPadding ? '' : 'p-4 md:p-6'} ${className}`} 
+  >
+    {children}
+    {/* Specular Highlight/Gradient Stroke */}
+    <div className="absolute inset-0 rounded-[24px] ring-1 ring-inset ring-white/10 pointer-events-none" />
+    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
+  </motion.div>
+);
 
-            <!-- Правая часть: Меню -->
-            <div class="relative">
-                <button id="menu-btn" class="flex items-center gap-2 px-4 py-2 rounded-full glass-panel hover:bg-white/10 transition active:scale-95 group">
-                    <span class="text-sm font-medium text-gray-300 group-hover:text-white">Меню</span>
-                    <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-transform duration-300" id="menu-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-
-                <!-- Выпадающая менюшка -->
-                <div id="dropdown-menu" class="absolute right-0 top-full mt-4 w-56 rounded-2xl glass-panel p-2 transform scale-95 opacity-0 invisible transition-all duration-200 origin-top-right">
-                    <div class="flex flex-col gap-1">
-                        <a href="#works" class="px-4 py-3 rounded-xl hover:bg-white/10 text-gray-300 hover:text-white transition flex justify-between items-center group">
-                            Работы
-                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </a>
-                        <a href="#cases" class="px-4 py-3 rounded-xl hover:bg-white/10 text-gray-300 hover:text-white transition flex justify-between items-center group">
-                            Кейсы
-                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </a>
-                        <a href="#reviews" class="px-4 py-3 rounded-xl hover:bg-white/10 text-gray-300 hover:text-white transition flex justify-between items-center group">
-                            Отзывы
-                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </a>
-                        <div class="h-px bg-white/10 my-1"></div>
-                        <a href="#contact" class="px-4 py-3 rounded-xl bg-accent/10 text-accent hover:bg-accent hover:text-white transition text-center font-medium">
-                            Связаться
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Главный экран (Hero) -->
-    <main class="relative pt-40 pb-20 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
+// 3. Universal Glass Button with Cyan Glow (Уменьшенные размеры и уменьшенное свечение)
+const GlassButton = ({ children, onClick, className = "", icon: Icon, disabled = false }) => (
+  <motion.button
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    disabled={disabled}
+    className={`
+        group relative flex items-center justify-center gap-2.5 
+        backdrop-blur-xl border transition-all duration-300
+        px-5 py-2.5 rounded-[14px] text-sm md:text-base font-medium tracking-wide
+        bg-white/[0.05] text-white/90
         
-        <!-- Декоративный элемент за текстом -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-radial from-white/5 to-transparent blur-3xl -z-10"></div>
+        // Universal Cyan Glow on Hover - СНИЖЕНА ИНТЕНСИВНОСТЬ СВЕЧЕНИЯ
+        border-white/10 hover:border-cyan-400/30 hover:shadow-[0_0_10px_rgba(6,182,212,0.2)]
+        
+        ${className}
+        ${disabled ? 'opacity-30 cursor-not-allowed' : ''}
+    `}
+  >
+    <span className="relative z-10 group-hover:text-cyan-200 transition-colors">{children}</span>
+    {Icon && <Icon className="w-4 h-4 relative z-10 opacity-80 group-hover:opacity-100 transition-opacity" />}
+    
+    {/* Internal Shine Effect (Аккуратный внутренний блик) */}
+    <div className="absolute inset-0 rounded-[14px] bg-gradient-to-tr from-white/0 via-white/[0.05] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+  </motion.button>
+);
 
-        <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 drop-shadow-2xl">
-            <span class="text-gradient" id="slogan-line1">Динамика.</span><br>
-            <span id="slogan-line2">Ритм. Эмоция.</span>
+// 4. Navbar with Side Menu (Стеклянная обводка аватара)
+const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // [EDITABLE] Пункты меню
+  const menuItems = [
+    { title: "Кейсы", href: "#cases" },
+    { title: "Работы", href: "#works" },
+    { title: "Отзывы", href: "#reviews" },
+    { title: "Связаться", href: "#contact", highlight: true },
+  ];
+
+  return (
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center max-w-7xl mx-auto pointer-events-none">
+        {/* Avatar - Clickable, with Glass Border */}
+        <motion.div 
+            className="pointer-events-auto w-10 h-10 rounded-full border border-white/30 backdrop-blur-sm bg-white/5 shadow-lg overflow-hidden relative cursor-pointer group"
+            whileHover={{ scale: 1.05 }}
+        >
+            <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-transparent transition-colors z-10" />
+            {/* [EDITABLE] Замените URL аватара */}
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" alt="[Image of Avatar]" className="object-cover w-full h-full" />
+        </motion.div>
+
+        {/* Menu Toggle - Clickable (Иконка меню - 3 полоски - это стандарт) */}
+        <motion.button
+          onClick={() => setIsOpen(true)}
+          className="pointer-events-auto w-10 h-10 flex items-center justify-center backdrop-blur-md bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-colors shadow-lg"
+          whileTap={{ scale: 0.95 }}
+        >
+          <MenuIcon className="w-5 h-5 text-white" />
+        </motion.button>
+      </nav>
+
+      {/* Side Menu Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsOpen(false)}
+                className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-[2px]"
+            />
+            {/* Side Panel (Компактная панель, выезжающая справа) */}
+            <motion.div
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed top-4 right-4 z-[70] w-64 bg-[#0a0f1c]/80 backdrop-blur-2xl border border-white/10 rounded-[24px] p-2 shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/5"
+            >
+                <div className="flex justify-end p-2 mb-2">
+                    <button 
+                        onClick={() => setIsOpen(false)}
+                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+              <div className="flex flex-col gap-1 pb-4 px-2">
+                {menuItems.map((item, idx) => (
+                    <a
+                    key={idx}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`
+                        px-4 py-3 rounded-[16px] text-sm font-medium flex justify-between items-center transition-all
+                        ${item.highlight 
+                            ? 'bg-blue-500/20 text-blue-200 hover:bg-blue-500/30 border border-blue-500/10' 
+                            : 'text-white/70 hover:bg-white/5 hover:text-white'
+                        }
+                    `}
+                    >
+                    {item.title}
+                    {item.highlight && <ArrowRight className="w-3.5 h-3.5" />}
+                    </a>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+// 5. Compact Hero (Центрированный контент)
+const Hero = () => {
+  return (
+    <section className="relative min-h-screen flex flex-col justify-center items-center px-4 pt-24 pb-12 text-center max-w-4xl mx-auto z-10"> 
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            {/* [EDITABLE] Статус */}
+            <span className="text-xs font-medium text-white/60 tracking-wide uppercase">Открыт для проектов</span>
+        </div>
+
+        {/* [EDITABLE] Основной заголовок */}
+        <h1 className="text-4xl md:text-6xl font-semibold text-white leading-tight tracking-tight mb-6 drop-shadow-2xl">
+          Visuals that <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-100 via-blue-300 to-cyan-200 font-bold">
+            transcend reality.
+          </span>
         </h1>
-        
-        <p class="text-lg md:text-xl text-gray-400 max-w-2xl mb-12 leading-relaxed" id="description-text">
-            Мы не просто клеим кадры. Мы создаем визуальный опыт, который удерживает внимание с первой до последней секунды. Монтаж для YouTube, Reels и рекламных роликов.
+        {/* [EDITABLE] Подзаголовок */}
+        <p className="text-base md:text-lg text-white/50 max-w-xl mx-auto leading-relaxed mb-10 font-light">
+          Премиальный видеомонтаж для тех, кто ценит эстетику. <br className="hidden md:block"/>
+          Мы превращаем кадры в цифровое искусство.
         </p>
+      </motion.div>
 
-        <!-- Кнопка с эффектом свечения текста -->
-        <!-- Удалены классы bg-white text-dark, так как они теперь контролируются в CSS для корректной анимации фона -->
-        <a href="#works" class="cta-button inline-flex items-center px-10 py-5 rounded-full font-bold text-lg active:scale-95">
-            <span class="text-glow">Наши работы</span>
-        </a>
+      <motion.div 
+        className="flex flex-col sm:flex-row gap-4 w-full max-w-xs sm:max-w-md mx-auto" 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <GlassButton className="w-full" onClick={() => document.getElementById('contact').scrollIntoView({behavior: 'smooth'})}>
+          Связаться
+        </GlassButton>
+        <GlassButton className="w-full" onClick={() => document.getElementById('works').scrollIntoView({behavior: 'smooth'})}>
+          Смотреть портфолио
+        </GlassButton>
+      </motion.div>
+    </section>
+  );
+};
 
-        <!-- Стрелочка удалена согласно запросу -->
-    </main>
+// 6. Refined Cases (Circle + Text Rectangle Layout)
+// [EDITABLE] Данные для кейсов
+const casesData = [
+  { title: "Neon Cyberpunk", category: "Music Video", clientText: "Universal Studios (Los Angeles)", bg: "from-fuchsia-900 to-purple-900" },
+  { title: "Eco Future", category: "Commercial", clientText: "GreenTech Startup", bg: "from-emerald-900 to-teal-900" },
+  { title: "Tech Unboxing", category: "YouTube", clientText: "Gadget Reviewer 'TechSense'", bg: "from-slate-800 to-gray-900" },
+  { title: "Fashion Week", category: "Event", clientText: "Vogue Magazine", bg: "from-rose-900 to-pink-900" },
+];
 
-    <!-- Карусель Видео -->
-    <section id="works" class="py-20 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-6 mb-10 flex items-end justify-between">
-            <div>
-                <h2 class="text-3xl md:text-4xl font-bold text-white mb-2">Наши работы</h2>
-                <p class="text-gray-400 text-sm md:text-base">Свайпайте, чтобы увидеть больше</p>
+const Cases = () => {
+  return (
+    <section id="cases" className="relative py-20 px-4 max-w-5xl mx-auto z-10">
+      <div className="flex items-end justify-between mb-8 px-2">
+        <h2 className="text-3xl font-semibold text-white tracking-tight">Избранные кейсы</h2>
+        <span className="text-white/30 text-sm hidden sm:block">01 — 04</span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {casesData.map((item, index) => (
+          <GlassCard 
+            key={index}
+            noPadding
+            hoverEffect={true}
+            className="group cursor-pointer flex p-3 items-center bg-white/[0.02] transition-colors duration-300"
+          >
+             {/* Left: Avatar/Circle Placeholder - [EDITABLE] Аватар клиента/проекта */}
+            <div className={`w-14 h-14 shrink-0 rounded-full border border-white/30 flex items-center justify-center bg-gradient-to-br ${item.bg} backdrop-blur-sm shadow-md`}>
+                <span className="text-white/70 text-xs font-bold uppercase">{item.category[0]}</span>
             </div>
-            <!-- Стрелки навигации (визуальные) -->
-            <div class="hidden md:flex gap-2">
-                <button onclick="scrollContainer('video-container', -300)" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center hover:bg-white/20 transition"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
-                <button onclick="scrollContainer('video-container', 300)" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center hover:bg-white/20 transition"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
-            </div>
-        </div>
 
-        <!-- Контейнер скролла -->
-        <div id="video-container" class="flex gap-6 overflow-x-auto px-6 pb-8 snap-x snap-mandatory scrollbar-hide">
+            {/* Right: Content Area (Rectangle) */}
+            <div className="flex-1 ml-4 py-1">
+                <span className="text-blue-300/80 text-xs tracking-widest uppercase mb-0.5 font-medium block">{item.category}</span>
+                <h3 className="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">{item.title}</h3>
+                {/* [NEW] Маленький пояснительный текст о клиенте */}
+                <p className="text-white/40 text-xs mt-1">{item.clientText}</p> 
+            </div>
+             <div className="ml-auto pr-2 shrink-0">
+                <ArrowRight className="w-5 h-5 text-white/40 group-hover:text-cyan-300 transition-colors" />
+            </div>
+          </GlassCard>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+// 7. Works (Arrow Navigation & 6 items: 3H, 3V)
+// [EDITABLE] Данные для работ (Замените цвета и заголовки)
+const worksItems = [
+    { type: 'horizontal', color: 'from-blue-800 to-indigo-900', title: 'Commercial', placeholder: 'Рекламный ролик 1' },
+    { type: 'vertical', color: 'from-indigo-800 to-purple-900', title: 'Short Form', placeholder: 'Вертикальное видео 1' },
+    { type: 'horizontal', color: 'from-purple-800 to-pink-900', title: 'Branding', placeholder: 'Брендинг 1' },
+    { type: 'vertical', color: 'from-blue-900 to-cyan-900', title: 'Explainer', placeholder: 'Объясняющее видео 1' },
+    { type: 'horizontal', color: 'from-cyan-900 to-teal-900', title: 'Docu', placeholder: 'Документальный проект 1' },
+    { type: 'vertical', color: 'from-teal-900 to-green-900', title: 'Music Video', placeholder: 'Музыкальный клип 1' },
+];
+
+const Works = () => {
+    const scrollRef = useRef(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const itemWidth = 336; // Ширина элемента (320px) + gap (16px)
+
+    const scroll = (direction) => {
+        if (scrollRef.current) {
+            const container = scrollRef.current;
             
-            <!-- Карточка 1: Шаблон для видео -->
-            <a href="URL_ВАШЕГО_ВИДЕО_1" target="_blank" class="min-w-[85vw] md:min-w-[400px] snap-center">
-                <div class="relative aspect-video rounded-3xl overflow-hidden glass-panel group cursor-pointer border border-white/10 hover:border-accent/50 transition duration-500">
-                    <img src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition duration-700" alt="Work 1">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition duration-300">
-                            <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                    <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-dark/90 to-transparent">
-                        <h3 class="text-xl font-bold text-white">Travel Vlog: Алтай</h3>
-                        <p class="text-gray-300 text-sm">Цветокоррекция, Саунд-дизайн</p>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Карточка 2 -->
-            <a href="URL_ВАШЕГО_ВИДЕО_2" target="_blank" class="min-w-[85vw] md:min-w-[400px] snap-center">
-                <div class="relative aspect-video rounded-3xl overflow-hidden glass-panel group cursor-pointer border border-white/10 hover:border-accent/50 transition duration-500">
-                    <img src="https://images.unsplash.com/photo-1536240478700-b869070f9279?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition duration-700" alt="Work 2">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition duration-300">
-                            <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                    <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-dark/90 to-transparent">
-                        <h3 class="text-xl font-bold text-white">Реклама: Neon Energy</h3>
-                        <p class="text-gray-300 text-sm">VFX, 3D анимация</p>
-                    </div>
-                </div>
-            </a>
-
-            <!-- Карточка 3 -->
-            <a href="URL_ВАШЕГО_ВИДЕО_3" target="_blank" class="min-w-[85vw] md:min-w-[400px] snap-center">
-                <div class="relative aspect-video rounded-3xl overflow-hidden glass-panel group cursor-pointer border border-white/10 hover:border-accent/50 transition duration-500">
-                    <img src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition duration-700" alt="Work 3">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition duration-300">
-                            <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                    <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-dark/90 to-transparent">
-                        <h3 class="text-xl font-bold text-white">Музыкальный клип</h3>
-                        <p class="text-gray-300 text-sm">Динамичный монтаж</p>
-                    </div>
-                </div>
-            </a>
-             <!-- Карточка 4 -->
-             <a href="URL_ВАШЕГО_ВИДЕО_4" target="_blank" class="min-w-[85vw] md:min-w-[400px] snap-center">
-                <div class="relative aspect-video rounded-3xl overflow-hidden glass-panel group cursor-pointer border border-white/10 hover:border-accent/50 transition duration-500">
-                    <img src="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition duration-700" alt="Work 4">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition duration-300">
-                            <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                    </div>
-                    <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-dark/90 to-transparent">
-                        <h3 class="text-xl font-bold text-white">Interview: Tech Talk</h3>
-                        <p class="text-gray-300 text-sm">Мультикам, графика</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </section>
-
-    <!-- Карусель Отзывов -->
-    <section id="reviews" class="py-10">
-        <div class="max-w-7xl mx-auto px-6 mb-10">
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-2">Отзывы клиентов</h2>
-            <p class="text-gray-400">Нам доверяют блогеры и бренды</p>
-        </div>
-
-        <div class="flex gap-6 overflow-x-auto px-6 pb-8 snap-x snap-mandatory scrollbar-hide">
-            <!-- Отзыв 1 -->
-            <div class="min-w-[80vw] md:min-w-[350px] snap-center">
-                <div class="glass-panel p-8 rounded-3xl h-full flex flex-col justify-between hover:bg-white/10 transition border border-white/5">
-                    <div>
-                        <p class="text-gray-200 leading-relaxed mb-6">"Ребята поняли задачу с полуслова. Монтаж динамичный, звук чистый. Видео залетело в рекомендации!"</p>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-gray-600 overflow-hidden">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" class="w-full h-full object-cover">
-                        </div>
-                        <div>
-                            <div class="text-white font-medium">Алексей М.</div>
-                            <div class="text-gray-400 text-xs">Блогер, 500к+</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Отзыв 2 -->
-            <div class="min-w-[80vw] md:min-w-[350px] snap-center">
-                <div class="glass-panel p-8 rounded-3xl h-full flex flex-col justify-between hover:bg-white/10 transition border border-white/5">
-                    <div>
-                        <p class="text-gray-200 leading-relaxed mb-6">"Лучшее вложение в контент за последний год. Сделали стильно, модно и в срок."</p>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-gray-600 overflow-hidden">
-                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" class="w-full h-full object-cover">
-                        </div>
-                        <div>
-                            <div class="text-white font-medium">Елена С.</div>
-                            <div class="text-gray-400 text-xs">Owner, Beauty Brand</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-             <!-- Отзыв 3 -->
-             <div class="min-w-[80vw] md:min-w-[350px] snap-center">
-                <div class="glass-panel p-8 rounded-3xl h-full flex flex-col justify-between hover:bg-white/10 transition border border-white/5">
-                    <div>
-                        <p class="text-gray-200 leading-relaxed mb-6">"Работаем уже над третьим проектом. Нравится внимание к деталям и саунд-дизайну."</p>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full bg-gray-600 overflow-hidden">
-                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" class="w-full h-full object-cover">
-                        </div>
-                        <div>
-                            <div class="text-white font-medium">Дмитрий К.</div>
-                            <div class="text-gray-400 text-xs">Студия "Frame"</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Секция Кнопки Связаться -->
-    <section id="contact" class="py-20 text-center px-6">
-        <div class="max-w-3xl mx-auto glass-panel rounded-[2.5rem] p-12 md:p-16 border border-white/10 relative overflow-hidden">
-            <!-- Блик -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-accent rounded-full mix-blend-overlay filter blur-[100px] opacity-20"></div>
-
-            <h2 class="text-3xl md:text-5xl font-bold mb-6 text-white">Готовы начать?</h2>
-            <p class="text-gray-300 text-lg mb-10 max-w-xl mx-auto">
-                Давайте обсудим ваш проект. Оставьте заявку, и мы превратим ваши идеи в качественный видеоконтент.
-            </p>
-            <!-- Кнопка "Связаться с нами" с единым стилем CTA -->
-            <!-- Удалены классы bg-white text-dark, так как они теперь контролируются в CSS для корректной анимации фона -->
-            <a href="mailto:info@prisma.com" class="cta-button inline-flex items-center px-10 py-5 rounded-full font-bold text-lg active:scale-95">
-                <span class="text-glow">Связаться с нами</span>
-                <!-- SVG теперь наследует цвет, становясь белым на голубом фоне -->
-                <svg class="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-            </a>
-        </div>
-    </section>
-
-    <footer class="py-8 text-center text-gray-500 text-sm border-t border-white/5">
-        &copy; 2023 PRISMA Production. All rights reserved.
-    </footer>
-
-    <script>
-        // Логика выпадающего меню (оставлена без изменений)
-        const menuBtn = document.getElementById('menu-btn');
-        const dropdown = document.getElementById('dropdown-menu');
-        const menuIcon = document.getElementById('menu-icon');
-        let isOpen = false;
-
-        menuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            isOpen = !isOpen;
-            if (isOpen) {
-                dropdown.classList.remove('opacity-0', 'invisible', 'scale-95');
-                dropdown.classList.add('opacity-100', 'visible', 'scale-100');
-                menuIcon.classList.add('rotate-90');
-                menuBtn.classList.add('bg-white/10');
+            if (direction === 'next') {
+                container.scrollLeft += itemWidth;
+                setCurrentIndex(prev => Math.min(prev + 1, worksItems.length - 1));
             } else {
-                dropdown.classList.add('opacity-0', 'invisible', 'scale-95');
-                dropdown.classList.remove('opacity-100', 'visible', 'scale-100');
-                menuIcon.classList.remove('rotate-90');
-                menuBtn.classList.remove('bg-white/10');
+                container.scrollLeft -= itemWidth;
+                setCurrentIndex(prev => Math.max(prev - 1, 0));
             }
-        });
-
-        // Закрытие меню при клике вне
-        document.addEventListener('click', (e) => {
-            if (isOpen && !dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
-                isOpen = false;
-                dropdown.classList.add('opacity-0', 'invisible', 'scale-95');
-                menuIcon.classList.remove('rotate-90');
-                menuBtn.classList.remove('bg-white/10');
-            }
-        });
-
-        // Плавный скролл для каруселей
-        function scrollContainer(id, distance) {
-            const container = document.getElementById(id);
-            container.scrollBy({ left: distance, behavior: 'smooth' });
         }
-    </script>
-</body>
-</html>
+    };
+    
+    const isAtStart = currentIndex === 0;
+    const isAtEnd = currentIndex >= worksItems.length - 1; 
+
+    return (
+        <section id="works" className="relative py-20 z-10">
+            <div className="max-w-5xl mx-auto px-6 mb-8 flex justify-between items-center">
+                 <h2 className="text-3xl font-semibold text-white">Шоурил & Работы</h2>
+                 <div className="flex gap-3">
+                     <GlassButton 
+                        onClick={() => scroll('prev')} 
+                        // ИСПРАВЛЕНО: Унифицированное округление
+                        className="!p-2 !w-8 !h-8 !rounded-[14px]" 
+                        disabled={isAtStart}
+                     >
+                         <ArrowRight className="w-4 h-4 transform rotate-180" />
+                     </GlassButton>
+                     <GlassButton 
+                        onClick={() => scroll('next')} 
+                        // ИСПРАВЛЕНО: Унифицированное округление
+                        className="!p-2 !w-8 !h-8 !rounded-[14px]" 
+                        disabled={isAtEnd}
+                     >
+                         <ArrowRight className="w-4 h-4" />
+                     </GlassButton>
+                 </div>
+            </div>
+            
+            {/* Scroll Container - [EDITABLE] Замените изображения или видеозаглушки */}
+            <div ref={scrollRef} className="flex overflow-x-hidden pb-8 px-6 gap-4 snap-x snap-mandatory max-w-7xl mx-auto scroll-smooth">
+                {worksItems.map((item, idx) => (
+                    <div key={idx} className="snap-start shrink-0">
+                         <GlassCard 
+                            noPadding
+                            className={`
+                                ${item.type === 'horizontal' ? 'w-[320px] aspect-video' : 'w-[320px] aspect-[9/16]'} 
+                                bg-gray-900 group cursor-pointer border-white/5
+                            `}
+                            hoverEffect={true}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                            <div className={`absolute inset-0 bg-gradient-to-br ${item.color}/40 opacity-70`} />
+                            
+                            {/* [PLACEHOLDER] Здесь может быть изображение или видеозаглушка. */}
+                            <div className="absolute inset-0 flex items-center justify-center text-white/50 text-center text-sm">
+                                {item.placeholder}
+                            </div>
+                            
+                            <div className="absolute bottom-6 left-6 z-20">
+                                <span className="text-xs text-white/50 uppercase tracking-wider block mb-1">{item.title}</span>
+                                <h4 className="text-white font-medium">Работа #{idx + 1}</h4>
+                            </div>
+                            
+                            <Play className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-white/30 group-hover:text-white transition-colors duration-300 drop-shadow-lg z-20" />
+                        </GlassCard>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+};
+
+// 8. Clean Testimonials
+// [EDITABLE] Данные для отзывов
+const Testimonials = () => {
+    const reviews = [
+        { name: "Alex K.", text: "Уровень VisionOS. Чисто, дорого, вовлекающе." },
+        { name: "Sarah M.", text: "Лучший опыт работы с монтажером за 5 лет." },
+        { name: "John D.", text: "Идеальный ритм и саунд-дизайн." },
+    ];
+
+    return (
+        <section id="reviews" className="relative py-20 px-4 z-10 max-w-5xl mx-auto">
+             <h2 className="text-3xl font-semibold text-white mb-10 pl-2">Отзывы</h2>
+             
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {reviews.map((rev, idx) => (
+                    <GlassCard key={idx} className="flex flex-col justify-between min-h-[180px] !bg-white/[0.02]" hoverEffect={true}>
+                        <div className="mb-4">
+                            <div className="flex gap-0.5 text-blue-400/80 mb-3">
+                                {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
+                            </div>
+                            <p className="text-white/70 text-sm leading-relaxed font-light">"{rev.text}"</p>
+                        </div>
+                        <div className="text-white font-medium text-sm border-t border-white/5 pt-3 mt-auto">
+                            {rev.name}
+                        </div>
+                    </GlassCard>
+                ))}
+             </div>
+        </section>
+    )
+}
+
+// 9. Footer
+const Footer = () => {
+    return (
+        <footer id="contact" className="relative py-24 px-6 z-10 text-center border-t border-white/5 bg-black/20 backdrop-blur-lg">
+            <div className="max-w-xl mx-auto">
+                {/* [EDITABLE] Текст в подвале */}
+                <h2 className="text-2xl font-bold text-white mb-6">Let's create something iconic.</h2>
+                <GlassButton className="mx-auto !px-8 !py-2.5"> 
+                    {/* ИСПРАВЛЕНО: Убрано !rounded-full, используется дефолтное rounded-[14px] */}
+                    Start Project
+                </GlassButton>
+                
+                {/* [EDITABLE] Ссылки на соцсети */}
+                <div className="flex justify-center gap-6 mt-10 opacity-50">
+                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                        <Instagram className="w-5 h-5 text-white hover:text-cyan-400 cursor-pointer transition-colors" />
+                    </a>
+                    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                        <Twitter className="w-5 h-5 text-white hover:text-cyan-400 cursor-pointer transition-colors" />
+                    </a>
+                    <a href="mailto:your_email@example.com" aria-label="Email">
+                        <Mail className="w-5 h-5 text-white hover:text-cyan-400 cursor-pointer transition-colors" />
+                    </a>
+                </div>
+                <p className="mt-12 text-xs text-white/20">© 2025 Vision Editing. All rights reserved.</p>
+            </div>
+        </footer>
+    )
+}
+
+/* --- MAIN APP --- */
+export default function App() {
+  // useEffect для гарантии прокрутки в начало (хотя браузеры обычно делают это по умолчанию)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <div className="min-h-screen font-sans selection:bg-cyan-500/30 selection:text-white bg-black">
+      <AmbientBackground />
+      
+      <main className="relative">
+        <Navbar />
+        <Hero />
+        <Cases />
+        <Works />
+        <Testimonials />
+        <Footer />
+      </main>
+      
+      <style>{`
+        /* Hide Scrollbar Globally */
+        html, body {
+            overflow-x: hidden;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        html::-webkit-scrollbar, body::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Opera */
+        }
+        
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+      `}</style>
+    </div>
+  );
+}
